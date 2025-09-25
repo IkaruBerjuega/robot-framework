@@ -1,9 +1,7 @@
 *** Settings ***
 Resource      ./App.resource
+Library    ../venv/lib/python3.13/site-packages/robot/libraries/Collections.py
 Variables     ../Variables/customerpage.py
-Library    ../.venv/lib/python3.12/site-packages/robot/libraries/Collections.py
-Library    ../.venv/lib/python3.12/site-packages/robot/libraries/XML.py
- 
 *** Variables ***
 @{verified_users_list}
 
@@ -43,7 +41,7 @@ Input and Clear Data
 
     Click Element    ${element_to_clear_and_input_text}
     ${existing_text}=    Get Value    ${element_to_clear_and_input_text}
-    Run Keyword If    '${existing_text}' != ''    Press Keys    ${element_to_clear_and_input_text}    CTRL+A    BACKSPACE
+    Run Keyword If    '${existing_text}' != ''    Press Keys    ${element_to_clear_and_input_text}    CTRL+A    COMMAND+A    BACKSPACE
     Input Text       ${element_to_clear_and_input_text}    ${input}
 
 
@@ -78,7 +76,6 @@ Create Customers
         Verify Customer is Added    ${customer}
     END
 
-    Log To Console    ${verified_users_list}
     Verify Table Display
 
 
@@ -122,7 +119,7 @@ Verify Table Display
         ${index}=    Evaluate    5 - ${i}
         ${name_from_cur_tr}    Strip name     ${name_to_verify}
         Should Be Equal As Strings    ${name_from_cur_tr}    ${verified_users_list[${index}]["name"]}
-        Log To Console    passed     ${verified_users_list[${i}]["name"]}
+
     END
 
     Log To Console    Verified users in the table..

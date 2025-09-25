@@ -16,7 +16,6 @@ TEST-000001
 Test-000002
     [Documentation]   Get last 5 users and update the last 5 rows in the table with the users' information
     @{customers}    Get Random Customers    ${5}    ${4}
-    Log To Console    ${customers}
     Update Customers    ${customers}    ${6}    ${10}    
     
 Test-000003
