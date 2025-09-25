@@ -18,9 +18,13 @@ Test-000002
     @{customers}    Get Random Customers    ${5}    ${4}
     Log To Console    ${customers}
     Update Customers    ${customers}    ${6}    ${10}    
-
-
     
 Test-000003
     [Documentation]    Log all table rows in first page  
     Log Table Data
+
+
+
+Test-000004
+    [Documentation]    Log the spending of each customer and calculate total spending
+    Display Users With Spending

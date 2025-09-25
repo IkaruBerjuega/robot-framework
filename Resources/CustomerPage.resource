@@ -30,10 +30,11 @@ Login Customer
     ELSE
         Log To Console    Login Failed
     END
-
+    
     Capture Page Screenshot
 
 Go to Customers Page
+
     Click Element    ${nav_btn_customers}
     Wait Until Element Is Visible    //table//tbody//tr    
     
@@ -167,7 +168,7 @@ Log Table Data
         ${orders}=    Get Text    ((${table_row})[${row}]//td)[4]
         ${total_spent}=    Get Text    ((${table_row})[${row}]//td)[5]
         ${latest_purchase}=    Get Text    ((${table_row})[${row}]//td)[6]
-        ${groups}=    Get Text    ((${table_row})[${row}]//td)[8]
+        ${segments_count}=    Get Element Count    ((${table_row})[${row}]//td)[8]//span
         
         IF    "\\n" in """${name}"""
             ${name}    Evaluate    """${name}""".replace("\\n", " ")[1:]
@@ -181,11 +182,70 @@ Log Table Data
         Log To Console    Orders: ${orders}
         Log To Console    Total Spent: ${total_spent}
         Log To Console    Latest Purchase: ${latest_purchase}
-        Log To Console    Groups: ${groups}
+
+        ${segments}=    Create List
+      
+        FOR    ${index}    IN RANGE    1    ${segments_count + 1}
+            ${span_text}=    Get Text    xpath=((${table_row})[${row}]//td)[8]//div[${index}]//span
+            Append To List    ${segments}    ${span_text}
+        END
+
+       
+
+        ${segments_list}=    Evaluate    ', '.join(${segments})
+        Log To Console    Segments: ${segments_list}
+        # Log To Console    Segments: ${segments}
         Log To Console    ===================\n
         
         ${row}=    Evaluate    ${row}+1
     END
+
+
+Validate and Display Total Customer Spending
+    [Arguments]    ${total_spending}
+    
+    ${formatted_total}=    Evaluate    "{:.2f}".format(${total_spending})
+
+    Log To Console    =========================
+    Log To Console    Total Customer Spending: $${formatted_total}
+    Log To Console    =========================
+
+    IF    ${total_spending} < 3500
+        Log To Console    FAIL: Total Spending ($${formatted_total}) is below minimum threshold ($3,500)
+    ELSE
+        Log To Console    PASS: Total Spending ($${formatted_total}) meets minimum threshold ($3,500)
+    END
+
+
+Display Users With Spending 
+    Log To Console    /n
+    Log To Console    =====Customers Total Spending======
+    ${row}=    Set Variable    1
+    ${table_rows}=    Get Element Count    ${table_row}
+    ${total_spending}=    Set Variable    ${0}
+
+    FOR    ${index}    IN RANGE    ${table_rows}
+        ${name}=    Get Text    ((${table_row})[${row}]//td)[2]
+        ${total_spent}=    Get Text    ((${table_row})[${row}]//td)[5]
+        
+        IF    "\\n" in """${name}"""
+            ${name}    Evaluate    """${name}""".replace("\\n", " ")[1:]
+        END
+
+        
+        IF    ${total_spent[1:]} > 0 
+            Log To Console    ${index}. Name: ${name} : ${total_spent}
+            ${total_spending}    Evaluate    ${total_spending} + float("""${total_spent}"""[1:].replace(',', ''))
+        END
+       
+        ${row}=    Evaluate    ${row}+1
+    END
+
+    Validate and Display Total Customer Spending    ${total_spending}
+        
+
+    Log To Console    \n
+    
 
 
     
