@@ -1,6 +1,11 @@
 *** Settings ***
 Resource      ./App.resource
 Variables     ../Variables/customerpage.py
+Library    ../.venv/lib/python3.12/site-packages/robot/libraries/Collections.py
+Library    ../.venv/lib/python3.12/site-packages/robot/libraries/XML.py
+ 
+*** Variables ***
+@{verified_users_list}
 
 
 *** Keywords ***
@@ -16,7 +21,7 @@ Login Customer
     Input Text    ${login_txt_password}    ${password}
     Capture Page Screenshot
     Click Button    ${login_btn_submit}
-   
+
 
     ${status}    Run Keyword And Return Status     Wait Until Element Is Visible    ${dashboard_hdr}    
 
@@ -31,36 +36,50 @@ Login Customer
 Go to Customers Page
     Click Element    ${nav_btn_customers}
     Wait Until Element Is Visible    //table//tbody//tr    
+    
+Input and Clear Data
+    [Arguments]    ${element_to_clear_and_input_text}    ${input}
 
+    Click Element    ${element_to_clear_and_input_text}
+    ${existing_text}=    Get Value    ${element_to_clear_and_input_text}
+    Run Keyword If    '${existing_text}' != ''    Press Keys    ${element_to_clear_and_input_text}    CTRL+A    BACKSPACE
+    Input Text       ${element_to_clear_and_input_text}    ${input}
+
+
+Input Customer Data
+    [Arguments]    ${customer}
+    Wait Until Element Is Visible    ${customers_txt_firstname}
+    Input and Clear Data   ${customers_txt_firstname}    ${customer["name"].split(" ")[0]}
+    Input and Clear Data   ${customers_txt_lastname}    ${customer["name"].split(" ")[1]}
+    Input and Clear Data   ${customers_txt_email}    ${customer["email"]}
+    Input Text  ${customers_txt_birthday}    ${customer["birthday"]}    
+    Input and Clear Data   ${customers_txt_address}    ${customer["address"]["street"]} ${customer["address"]["suite"]}
+    Input and Clear Data   ${customers_txt_city}    ${customer["address"]["city"]}
+    Input and Clear Data   ${customers_txt_stateAbbr}    ${customer["stateAbbr"]}
+    Input and Clear Data   ${customers_txt_zipcode}    ${customer["address"]["zipcode"]}
+    Input and Clear Data   ${customers_txt_password}    ${customer["password"]}    
+    Input and Clear Data   ${customers_txt_confirm_password}    ${customer["password"]}
 Create Customer 
     [Arguments]    ${customer}
     Click Element    ${customers_btn_create}
     Wait Until Element Is Visible    ${customers_txt_firstname}
-    Input Text    ${customers_txt_firstname}    ${customer["name"].split(" ")[0]}
-    Input Text    ${customers_txt_lastname}    ${customer["name"].split(" ")[1]}
-    Input Text    ${customers_txt_email}    ${customer["email"]}
-    Input Text    ${customers_txt_birthday}    ${customer["birthday"]}
-    Input Text    ${customers_txt_address}    ${customer["address"]["street"]} ${customer["address"]["suite"]}
-    Input Text    ${customers_txt_city}    ${customer["address"]["city"]}
-    Input Text    ${customers_txt_stateAbbr}    ${customer["stateAbbr"]}
-    Input Text    ${customers_txt_zipcode}    ${customer["address"]["zipcode"]}
-    Input Text    ${customers_txt_password}    ${customer["password"]}    
-    Input Text    ${customers_txt_confirm_password}    ${customer["password"]}
+    Input Customer Data    ${customer}
     Click Button    ${customers_btn_save}
     Wait Until Page Contains    Customer created
 
 Create Customers 
-    [Arguments]    ${max_no_to_create}     ${customers}   
+    [Arguments]    ${customers}   
 
 
-    ${count}=    Set Variable    0
     FOR    ${customer}    IN    @{customers}
-        Exit For Loop If    ${count} >= ${max_no_to_create}
         Go to Customers Page
         Create Customer    ${customer}
         Verify Customer is Added    ${customer}
-        ${count}=    Evaluate    ${count} + 1
     END
+
+    Log To Console    ${verified_users_list}
+    Verify Table Display
+
 
 Verify Customer Is Added   
     [Arguments]    ${customer}
@@ -75,7 +94,6 @@ Verify Customer Is Added
     ${password}    Get Element Attribute    ${customers_txt_password}    value
     ${confirm_password}    Get Element Attribute    ${customers_txt_confirm_password}    value
 
-
     
     Should Be Equal As Strings    ${first_name}    ${customer["name"].split(" ")[0]}
     Should Be Equal As Strings    ${lastname}    ${customer["name"].split(" ")[1]}
@@ -89,4 +107,86 @@ Verify Customer Is Added
     Should Be Equal As Strings    ${password}    ${customer["password"]}
     Should Be Equal As Strings    ${confirm_password}    ${customer["password"]}
 
+    
+    Append To List    ${verified_users_list}    ${customer}
 
+
+Verify Table Display
+    Go to Customers Page
+    Log To Console    Verifying table display...
+    Refresh Current Page
+     
+    FOR    ${i}    IN RANGE    1    5
+        ${name_to_verify}    Get Text   ((${table_row})[${i}]//td)[2]
+        ${index}=    Evaluate    5 - ${i}
+        ${name_from_cur_tr}    Strip name     ${name_to_verify}
+        Should Be Equal As Strings    ${name_from_cur_tr}    ${verified_users_list[${index}]["name"]}
+        Log To Console    passed     ${verified_users_list[${i}]["name"]}
+    END
+
+    Log To Console    Verified users in the table..
+
+
+Strip name
+    [Arguments]    ${name}
+
+    IF    "\\n" in """${name}"""
+        ${stripped_name}    Evaluate    """${name}""".replace("\\n","")[1:]
+    END
+
+    Return From Keyword    ${stripped_name}
+
+
+Update Customer     
+    [Arguments]    ${newCustomerData}    ${toClick}
+    Click Element    ${toClick}
+    Input Customer Data    ${newCustomerData}
+    
+
+Update Customers
+    [Arguments]    ${newCustomersData}    ${startingRowIndex}    ${lastRowIndex}
+    
+
+
+    FOR    ${i}    IN RANGE    ${startingRowIndex}    ${lastRowIndex}
+        Go to Customers Page
+        ${index}    Evaluate    ${i} - ${startingRowIndex} 
+        Update Customer    ${newCustomersData[${index}]}    (${table_row})[${i}]
+    END
+
+
+    Go to Customers Page
+
+
+Log Table Data 
+    ${row}=    Set Variable    1
+    ${table_rows}=    Get Element Count    ${table_row}
+    FOR    ${index}    IN RANGE    ${table_rows}
+        ${name}=    Get Text    ((${table_row})[${row}]//td)[2]
+        ${last_seen}=    Get Text    ((${table_row})[${row}]//td)[3]
+        ${orders}=    Get Text    ((${table_row})[${row}]//td)[4]
+        ${total_spent}=    Get Text    ((${table_row})[${row}]//td)[5]
+        ${latest_purchase}=    Get Text    ((${table_row})[${row}]//td)[6]
+        ${groups}=    Get Text    ((${table_row})[${row}]//td)[8]
+        
+        IF    "\\n" in """${name}"""
+            ${name}    Evaluate    """${name}""".replace("\\n", " ")[1:]
+        END
+
+
+        Log To Console    \n
+        Log To Console   ===== ${name} =====
+        Log To Console    Name: ${name}
+        Log To Console    Last Seen: ${last_seen}
+        Log To Console    Orders: ${orders}
+        Log To Console    Total Spent: ${total_spent}
+        Log To Console    Latest Purchase: ${latest_purchase}
+        Log To Console    Groups: ${groups}
+        Log To Console    ===================\n
+        
+        ${row}=    Evaluate    ${row}+1
+    END
+
+
+    
+    

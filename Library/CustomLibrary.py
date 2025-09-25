@@ -4,8 +4,8 @@ import string
 import random
 
 class CustomLibrary():
-    
-    def get_random_customers(self):
+
+    def get_random_customers(self, no_to_return, start_index=0):
         response = requests.get("https://jsonplaceholder.typicode.com/users", verify=False)
         users = response.json()
         
@@ -15,7 +15,8 @@ class CustomLibrary():
             i["stateAbbr"] = str(i["address"]["street"][0])+str(i["address"]["suite"][0])+str(i["address"]["city"][0])
             
             
-        return users
+        return users[start_index : start_index + no_to_return]
+
     
     def generate_random_birthday(self):
        return  str(random.randint(1,12)).zfill(2)+str(random.randint(1,28)).zfill(2)+str(random.randint(1999,2006)).zfill(2)
