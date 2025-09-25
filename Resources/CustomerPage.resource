@@ -165,6 +165,7 @@ Log Table Data
         ${orders}=    Get Text    ((${table_row})[${row}]//td)[4]
         ${total_spent}=    Get Text    ((${table_row})[${row}]//td)[5]
         ${latest_purchase}=    Get Text    ((${table_row})[${row}]//td)[6]
+        ${news}=    Get Element Attribute    ((${table_row})[${row}]//td)[7]//span //*[local-name()='svg']    aria-label
         ${segments_count}=    Get Element Count    ((${table_row})[${row}]//td)[8]//span
         
         IF    "\\n" in """${name}"""
@@ -179,6 +180,7 @@ Log Table Data
         Log To Console    Orders: ${orders}
         Log To Console    Total Spent: ${total_spent}
         Log To Console    Latest Purchase: ${latest_purchase}
+        Log To Console    News: ${news}
 
         ${segments}=    Create List
       
